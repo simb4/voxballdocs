@@ -2,11 +2,8 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 Below you will find some information on how to perform common tasks.<br>
 You can find the most recent version of this guide [here](https://github.com/facebookincubator/create-react-app/blob/master/packages/react-scripts/template/README.md).
-
 ## Table of Contents
-
 - [Updating to New Releases](#updating-to-new-releases)
-- [Sending Feedback](#sending-feedback)
 - [Folder Structure](#folder-structure)
 - [Available Scripts](#available-scripts)
   - [npm start](#npm-start)
@@ -100,16 +97,13 @@ In most cases bumping the `react-scripts` version in `package.json` and running 
 
 We commit to keeping the breaking changes minimal so you can upgrade `react-scripts` painlessly.
 
-## Sending Feedback
-
-We are always open to [your feedback](https://github.com/facebookincubator/create-react-app/issues).
-
 ## Folder Structure
 
-After creation, your project should look like this:
+Project folder structure should look like this:
 
 ```
-my-app/
+votemFront/
+  build/
   README.md
   node_modules/
   package.json
@@ -117,12 +111,47 @@ my-app/
     index.html
     favicon.ico
   src/
-    App.css
-    App.js
-    App.test.js
-    index.css
+    actions/
+      adminActions.js
+      authActions.js
+      categoryActions.js
+      pollActions.js
+      profileActions.js
+    api/
+      adminApi.js
+      authApi.js
+      categoryApi.js
+      pollApi.js
+      profileApi.js
+    components/
+      admin/
+      auth/
+      elements/
+      header/
+      img/
+      new-poll/
+      poll/
+      poll-list/
+      profile/
+      register/
+      templates/
+    constants/
+    containers/
+      App.js
+      Main.js
+      NoMatch.js
+    reducers/
+      adminReducer.js
+      authReducer.js
+      categoryReducer.js
+      index.js
+      pollReducer.js
+      profileReducer.js
+      userReducer.js
+    styles/
+    configureStore.js
     index.js
-    logo.svg
+  widget/
 ```
 
 For the project to build, **these files must exist with exact filenames**:
@@ -141,32 +170,356 @@ Read instructions below for using assets from JavaScript and HTML.
 You can, however, create more top-level directories.<br>
 They will not be included in the production build so you can use them for things like documentation.
 
+Below you can find the list of folders and its meaning:
+
+### widget
+Widget test page. Imported `iframe` to copied page of `tengrinews.kz`.
+Widget consist of 2 things. Frame and script. 
+* Frame is an `iframe` that is generated when you click share on any poll (or article). 
+* script is js code, that is published in `public` folder, and can be accessed via url `SITE_URL/voxball_script.js`.
+
+
+
+### src
+#### actions
+redux action creators. All actions are declared at `src/constants/actionTypes.js`. This folder contain serveral files, divided by logic, that contain action creators (dispatchers).
+
+
+
+##### adminActions
+admin envolved actions (articles, poll approve)
+
+* `getStatistics` - gets admin statistics which is shown at url `/admin`. Also used to get some stats of article or poll.
+* `getArticles` - gets list of articles. Used at `/admin/partners`.
+* `deleteArticle` - deletes article by `article_id`.
+* `selectArticle` - select article (gets from the existing list) or read article from server and assign obtained article to `state.admin.article`.
+* `updateArticle` - update existing article (changes in list of relatedPolls).
+* `cancelEditArticle` - cancels article edit mode, returning back from `/admin/partners/:id` to `/admin/partners` (ArticleList).
+* `getRelatedPolls` - gets polls related to exact article. It obtain polls that considered as relevant. Backend services crawl the url specified and are extracting meta tags and returning relevent polls.
+* `searchPollByTitle` - recieves relevant polls by search string.
+* `approvePoll` - approvment of poll, basically, changing its state `poll_status` to 1 of the 3 states: `POLL_APPROVED`, `POLL_REJECTED`, `POLL_UNKNOWN` (see `constants.js`).
+
+##### authActions
+Authentication and authorization actions (login, logout, register, resets).
+
+* `checkLogin` - checks if requested login exist.
+* `login` -  authorization of user by login and password.
+* `fbLogin` - authorization of user by facebook account.
+* `register` - registering user by phone or email.
+* `send_code` - send SMS code to the phone requested.
+* `resend_code` - resend SMS code to the phone requested.
+* `sms_activate` - activate SMS code that sent to specified phone.
+* `email_activate` - Activate email by token in url, that were sent to email eariler.
+* `sendResetEmail` - send email to reset login credentials.
+* `resetPassword` - resetting password with special token.
+* `addAccount` - sets `state.auth.isNewLoggingIn` to true, in order to allow visit auth pages. Allows user to add account, `isNewLoggingIn` sets to false after successful login.
+* `changeAccount` - changing current user account to another, saved at `state.user.accounts`.
+* `logout` - Logout - abourting all sessions.
+
+##### categoryActions
+categories, templates, keywords actions (cities and countries as well)
+
+* `createTemplate` - admin action: create poll template.
+* `updateTemplate` - admin action: update poll template (poll_type cannot be changed).
+* `deleteTemplate` - admin action: delete template.
+* `getCategoryList` - get all categories list.
+* `editUserCategory` - subscribe/unsibscribe user to/from category.
+* `getPollTemplates` - Get list of templates (infinite scroll).
+* `getAllKeywords` - Get list of keywords (can be improved if send category_id).
+* `getCountries` - Get list of countries.
+* `getCities` - get list of cities.
+* `createCategory` - admin action: create category.
+* `removeCategory` - admin action: delete category.
+
+##### pollActions
+poll actions (poll feed, read poll, delete poll, create poll)
+
+* `getCookie` - gets cookie of visitor, null if not exist.
+* `createPoll` - creates poll. Dispatches the action that adds poll to the opened feed (in some cases) (should be removed since recent time).
+* `selectPoll` - setting `state.poll.poll` equal to poll with specified id obtained from some poll list.
+* `readPoll` - get poll by id. `(!)` Attention: some browsers are not allowing set cookies, thats why, if there are no cookies in browser, we gather it from local storage. It is required to protect from multi-answering.
+* `readArticle` - get article by id. (see `readPoll`)
+* `answerPoll` - answer to poll. (see `readPoll`)
+* `getWidgetsOfPoll` - Get widget statistics of articles that contain specified poll.
+* `readModeratorPoll` - Read moderator poll, it contains additional statistics. 
+* `deletePoll` - Delete poll by id.
+* `viewPoll` - View poll (increasing counter).
+* `updatePollFeed` - update poll feed. Updating one of the poll lists (`myPollList` or `pollList`) by adding new polls at the top.
+* `updateAdminPollFeed` - update admin poll feed. 
+* `updateTemplateFeed` - update template feed.
+* `selectFilters` - change `state.poll.filters` to new filters. `filters` is key object that tells us what kind of poll list is currently used by `filters.type`. If `filters` is changed - poll list refreshs.
+* `clearFeed` - clears poll list.
+
+##### profileActions
+profile actions (profile, user)
+
+* `openMobileSidebar` - open mobile sidebar.
+* `closeMobileSidebar` - close mobile sidebar.
+* `getUserProfile` - get user profile. Rewrites if already there.
+* `updateUser` - Update user profile. Possible updates: full_name, avatar, phone, email.
+* `updatePassword` - update user password.
+* `activateNewPhone` - Activate new phone by code.
+
+#### api
+Backend interaction. Api calls for action creators.
+All methods are protected with csrf token. This token contains hash of current date and private key. You can find `csrf method` at `constants.js`.
+
+Usually, header of each api call is `STD_HEADERS` which you can find at `constants.js`. Body is transformed with imported library method `qs.stringify(data)` or own methods as `toFormData(data)` or `transformRequest(data)` declared at `src/constants/transform.js`.
+
+#### components
+<h1> Components </h1>
+
+##### admin
+Admin pages.
+
+* `AdminFeed` - Admin moderation feed. Admin can filter content by filter sidebar. Can open poll and browse in carousel mode, and moderate polls.
+* `AdminMain` - Admin main dashboard where he can see aggregated statistics.
+* `AdminPartners` - Partners page was to move to `partners` category of users. For Admin it should be adding 3-rd party resources. But for now it is generating articles with edit mode. 
+* `partners/ArticleEdit` - Article edit mode. Left side contain polls attached to the article. Right side - related or suggested polls.
+* `partners/ArticleList` - List of articles. Here you can create, delete, edit and view aggregated stats of specific article.
+
+##### auth
+Authorization pages (login and reset flows)
+
+* `Login` - Login flow container. There are 6 steps of Login flow.
+* `FBLogin` - facebook login button.
+* `HandleLogin` - 1st step of login flow. Obtain login and check it, also can follow the register flow.
+* `HandlePassword` - 2nd step of login flow. Obtain password and check it, redirects to the main, also can follow reset flow.
+* `ResetByPhone` - Reset flow. If user at step 1 enters phone, this page is reuqested. Confirming phone we send code to authenticate user.
+* `ResetGetEmail` - Reset flow. If user at step 1 enters email, this page is reuqested. Confirming email we send url to authenticate user.
+* `ResetPassword` - After user was authenticated, this page is requested.
+
+##### elements
+* `AvatarCropper` - image cropper element.
+* `AvatarMenu` - avatar and name edit component.
+* `Loader` - common loader.
+* `Validator` - email and phone validation.
+
+##### header
+header and sidebar pages and elements.
+
+* `Header` - header of web pages. Header is added at `Main.js` at `HeaderRoute` component (see `containers`)
+* `MobileSideBar` - In mobile, instead of full header there is a humberger that opens sidebar. Sidebar contains same links as header.
+
+##### img
+Images and logos.
+
+##### new-poll
+Main new poll constructor
+
+* `NewPollOpener` - opens popup with constructor on request or links to login and register flows if user is not authorized.
+* `NewPollContainer` - new poll constructor container. Poll create consists of 5 steps.
+* `NewPoll` - 1st (main) step. Enter `poll_title`, enter answers as `sc_choices`, selecting `poll_type`, selecting `image`. Minimal number of answers is 2.
+* `SelectCategory` - 2nd step. Selecting category from category list. After clicking desired category proceeded to next step.
+* `SelectTags` - 3rd step. Select tags from suggested or craete your own by pressing enter. 
+* `SelectDate` - 4th step. Select poll duration(hours, days) or dates when poll will be held (see `rc-calendar`). After this step new poll creation is started.
+* `NewPollContainer.renderFinishStep` - 5th step, but it is not separate component. This page is feedback of new poll creation.
+* `SelectSubcategory` - Some categories have subcategories. If user selects `Из шаблона` (from template), list of subcategories will appear. After choosing subcategory, subcategory templates will be shown. Admin action: admin here can modify list of categories.
+* `SelectTemplates` - Select template from list of templates of choosen subcategory. After selection, user will be thrown to `step 1` of new poll flow and will skip `step 2`.
+
+##### poll
+Poll related components.
+
+* `Poll` - key component. Poll has `poll_choices`. If it is not star type, `makeGrid` will try to fit in max number of columns (up to 5).
+
+  Basically, poll have 3 states:
+  * `not answered` - user is allowed to choose answer(s).
+  * `Answered` - user can see results, can see percent agreed with him.
+  * `finished` - finished poll, noone can vote, but all can see results.
+  As we can see, answered and finished are technically same case, so `this.state.isAnswered` is the only variable you should take care of.
+
+  After poll was answered one can share it in 3 ways:
+  * `iframe` - one can post it on own resource, page, etc.
+  * `link` - there is a `private_code`, that uniquely identify poll. Link contain meta tags.
+  * `facebook share` - one can share poll at facebook. It shares above mentioned link on facebook, so meta are provided.
+
+Poll itself is a stateless component. You must provide `poll` to props from parent.
+* `PollShort` - Short version of Poll.
+* `PollView` - view of poll in carousel. There are buttons left and right so you can navigate to other polls. Close button redirect to feed. Optionally, you can hide or add logo at the top.
+* `PollPopup` - popup with PollView inside. Here logo is added at the top.
+* `PollStats` - statistics for poll. Contain facebook statistics, voxball own statistics (see `adminActions.getStatistics`), stats on widgets (see `pollActions.getWidgetsOfPoll`).
+* `PollWidget` - View of widget. Style diffes a bit. `isWidget` passed to Poll. It helps to differ statistics of poll (`widget: true` is passed on api calls) (see `widget` folder description).
+* `PollArticle` - View of article. `isWidget` passed to Poll.
+
+##### poll-list
+* `PollGrid` - PollGrid is using `StackGrid` from `react-stack-grid`. It render tiles in renderPollPreview method. The width is fixed for device, the height depends on length of title (`countRows` method). When view hits bottom (`Waypoint`) `loadMore` is fired. If you click poll preview url will change manually and PollPopup will open.
+* `PollFeed` - main page, there are several urls that match this component. Depending on url appropriate `filters` are selected. You can find filters selection in constructor.
+* `PollList` - list of `PollShort` components in one column.
+
+##### profile
+* `Profile` - profile settings of user. With `udpateUser` method user can update `full_name`, Change avatar, add `email` or `phone` (with confirmation). `password` can be changed as well.
+* `AddPhone` - Component to add phone if user regestered with email. User must confirm phone with code. Same process as reset by phone.
+
+##### register
+* `Register` - register flow container. 
+  * `STEP_REGISTER_USERNAME` - `HandleName` component. Checks if such username exists. Accepts email or phone.
+
+  There are 2 branches: email username or phone username:
+  * phone:
+    * `STEP_REGISTER_CODE` - `HandleCode` component. After `STEP_REGISTER_USERNAME` code is sent to entered phone. This component wait for this code.
+    * `STEP_RESET_PASSWORD` - `HandlePassword` component. this step asks to set password. After submit user is successfully registered, the link to `/login` page is provided.
+  
+  * email:
+    * `STEP_RESET_PASSWORD` - `HandlePassword` component. this step asks to set password. After submit user is successfully registered, the text with instructions is displayed (email sent).
+    * `STEP_ACTIVATE_BY_EMAIL` - email activation confirm page.
+
+  A lot here is captured at `componentWillReceiveProps`. 
+
+
+##### templates
+all related to templates (template creation page, template view page)
+
+* `AdminTemplate` - admin page: page where admin can create, update and delete(CrUD) templates. Also admin can CrUD categories here as well. First he chooses subcategory, then see all templates of choosen category in PollGrid.
+* `Template` - template view. View of template at `AdminTemplate` page.
+
+####  constants
+Global constants of the project.
+
+* `actionTypes` - all actions are defined here. Names are pretty descriptive.
+* `constants` - key constants:
+  * `FACEBOOK_APP_ID` - facebook app id to post on facebook.
+  * `APP_STORE_LINK` - link to ios app.
+  * `FEED_UPDATE_LIMIT` - number of polls that update feed.
+  * `MOBILE_MAX_WIDTH` - max width of mobile view of pages (see `Main.js`)
+  * `SITE_URL` - web site address (for now production or development).
+  * `CSSVARS` - css variables, copy of `styles/variables.scss`.
+  * `csrf` - csrf hash code.
+* `server` - contain `SERVER_URL` which is url for api calls.
+* `transform` - functions to transform body of api calls.
+
+#### containers
+
+* `App` - Entry component of the project. At this layer muiThemeProvider is added (Material-UI theme). With palette you can customize it. Feel free to add any other tools here, this layer is only for this purposes.
+* `Main` -  Router of a project. React-router of vesrion >= 4.0 is used. There are following Route wrappers:
+  * `HeaderRoute` - no route access allowance is reuquired. Header is added with component passed to props. Also here isMobile is calculated.
+  `isMobile` calculated with userAgent (checks if tablet or phone) or with device width. So tablets and phones will definitely return true for that flag (and small screens on desktop as well). For developing purposes useragent check is turned off for development mode.
+  * `AuthRoute` - route for not authorized users (forbid authorized users visit that page, except case if new user is about to be added).
+  * `UserRoute` - route allowed only for authorized users.
+  * `AdminRoute` - route allowed for admins only.
+  * Last 3 components are wrapping Header route (so Header or sidebar is going to be added)
+* `NoMatch` -  'no such page' page.
+
+####  reducers
+Global state of project.
+
+##### adminReducer
+
+* `statistics` - admin dashboard statistics.
+* `isFilterLoading` - boolean: obtaining admin stats.
+* `articles` - list of articles.
+* `articlesLoading` - loading articles boolean.
+* `articleLoading` - loading article boolean.
+* `isEditMode` - control of edit mode at `AdminPartners` page.
+* `article` - current article.
+* `urlErrorText` - error on adding url at `AdminPartners` page.
+
+##### authReducer
+authentication models: logical values indicating whether action (login for example) were finished. All names are quite descriptive. Let's consider only key values:
+
+* `isLoggedIn` - boolean indicates whether user is logged in or not. This value stored in local storage (cause is indicating a session).
+* `isModerator` - boolean indicates whether logged in user is admin. this value store in local storage.
+* `isNewLoggingIn` - boolean indicating if user is about to add new account. This variable allows authorized user visit `AuthRoute`'s.
+
+##### categoryReducer
+
+* `categoryList` - list of all categories with subcategories.
+* `userCatsLoading` - list of categories that is updating its status (suscr/unsubscr).
+* `pollTemplates` - list of all tempaltes (used at create poll).
+* `isTemplateLoading` - boolean meaning if template is loading or not.
+* `allKeywords` - list of all keywords.
+* `countries` - all contries list.
+* `cities` - all cities list.
+
+##### index.js
+Index.js is combiner of all states, also called `rootReducer`.
+
+##### pollReducer
+poll models: key reducer, contains poll related containers and objects.
+
+* `filters` - filter is crucial object ot indetify current poll list. It contains filters like `category_id`, `own:true`, `popular:true` etc... Also there is a field `filters.type` defining current poll grid (`'my'`, `'popular'`, `'admin'`, `'template'`). With filters object, there is no need in separate lists like `adminPollList` and `myPollList`. But historically they are there.
+* `pollList` - general list of polls used at `PollFeed` page. 
+* `adminPollList` - list of polls used at `AdminPollFeed` page.
+* `myPollList` - list of polls used at `PollFeed` page with url `/mypolls`.
+* `templateList` - list of polls used at `AdminTemplate` page.
+* `pollListIsLoading` - boolean, indincates loading of poll list.
+* `hasMorePolls` - boolean, indicates if poll feed has more to update (if recent update number of polls is less that `FEED_UPDATE_LIMIT`, then the feed is considered finished).
+* `newPollIsLoading` - boolean, indicates loading of new poll.
+* `poll` - current poll.
+* `newPoll` - current newPoll.
+* `prevPollId` - id of previous poll at PollView (left arrow). If no poll - `-1` is returned.
+* `nextPollId` - id of next poll at PollView (right arrow). If no poll - `-1` is returned.
+* `moderatorPoll` - result of `pollActions.readModeratorPoll`.
+* `widgetsOfPoll` - result of `pollActions.getWidgetsOfPoll`.
+* `widgetsAreLoading` - boolean, indicates loading of the object `widgetsOfPoll`.
+* `pollIsLoading` - boolean, indicates loading of current poll.
+* `pollIsAnswering` - boolean, indicating poll answer process loading.
+
+##### profileReducer
+profile models: just logical values like whether this action(profile update) is finished (true\false).
+Here is list of them, names are quite descriptive:
+`isPasswordUpdating`, `isPasswordUpdated`, `isAvatarLoading`, `isProfileUpdating`, `isProfileUpdated`.
+
+##### userReducer
+`IMPORTANT:` userReducer is stored at local storage fully.
+User reducer is session oriented reducer. All session information is stored here.
+* `cookie` - cookie stored at local storage in case of browser blocks cookies. One exact use case is `Safari`. When widget appears at `Safari` on other resourse browser cookies cannot be stored (before first visit - default setting). Thats why we store cookie at local storage as well - to stop user double answering from widget. Also it covers many other cases.
+* `token` - user token. Unique token of user to confirm user identity at back-end side. If user is logged in, we pass user token at headers almost everywhere.
+* `user` - user object. KEY object. We transform user, to our own manner when user updated. See code for details.
+* `accounts` - list of users currently logged in (multiple accounts feature). On logout all sessions are aborted.
+
+####  styles
+Global css styles.
+`Styles.scss` - global styles.
+`vriables`scss` - global css variable. 
+
+#### configureStore.js
+Project configurations. Here we can add middlewares, here we save state to the local storage, add loggers and etc.
+
+
 ## Available Scripts
 
 In the project directory, you can run:
 
 ### `npm start`
 
-Runs the app in the development mode.<br>
+Runs the app in the development mode on development server (for Linux/MacOS).<br>
 Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 
 The page will reload if you make edits.<br>
 You will also see any lint errors in the console.
 
-### `npm test`
+### `npm start-win`
 
-Launches the test runner in the interactive watch mode.<br>
-See the section about [running tests](#running-tests) for more information.
+Runs the app in the development mode on development server (for windows).<br>
 
 ### `npm run build`
 
-Builds the app for production to the `build` folder.<br>
+Builds the app for development server to the `build` folder.<br>
 It correctly bundles React in production mode and optimizes the build for the best performance.
 
 The build is minified and the filenames include the hashes.<br>
 Your app is ready to be deployed!
 
 See the section about [deployment](#deployment) for more information.
+
+### `npm run build-win`
+
+Build the for development to the `build` folder (for Windows).
+
+### `npm run build-prod`
+
+Builds the app for production to the `build` folder.<br>
+
+### `npm run build-prod-win`
+
+Builds the app for production to the `build` folder (for Windows).<br>
+
+### `npm test`
+
+
+Launches the test runner in the interactive watch mode.<br>
+See the section about [running tests](#running-tests) for more information.
+
 
 ### `npm run eject`
 
